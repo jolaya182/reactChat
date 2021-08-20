@@ -14,10 +14,11 @@ const cors = {
 const io = socket(server, cors);
 
 io.on("connection", (clientSocket)=>{
-    console.log("hit", clientSocket);
+    // console.log("hit", clientSocket);
+    clientSocket.join("chatRoom");
 
     clientSocket.on("sendMessage", (message)=>{
         console.log("received", message);
-        clientSocket.emit("receiveMessage", "right back at you")
+        clientSocket.to("chatRoom").emit("receiveMessage", message);
     })
 })

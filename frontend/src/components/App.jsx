@@ -7,14 +7,12 @@
  */
 import { HashRouter, Route, Switch } from 'react-router-dom';
 import { Whoops404, ChatView, ChatHistory } from '../pages/Page';
-import constants from '../constants/constants';
 
 /**
  * Main App component that fetches the initial podcast show data
  * @return {html}
  */
 const App = () => {
-  const { URL } = constants;
 
   return (
         <HashRouter>
