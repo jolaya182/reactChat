@@ -16,7 +16,9 @@
 // import Row from 'react-bootstrap/Row';
 // import Col from 'react-bootstrap/Col';
 // import Container from 'react-bootstrap/Container';
+import { useRef, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import io from 'socket.io-client'
 // import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 // import Tooltip from 'react-bootstrap/Tooltip';
 // import Table from 'react-bootstrap/Table';
@@ -29,6 +31,27 @@ export const MainTemplate = ({children}) =>{
 }
 
 export const ChatView = () =>{
+  const socketRef = useRef();
+  socketRef.current = io.connect('http://localhost:3000', {
+      reconnectionDelay: 1000,
+      reconnection: true,
+      reconnectionAttemps: 10,
+      transports: ['websocket'],
+      agent: false,
+      upgrade: false,
+      rejectUnauthorized: false
+    });
+
+  socketRef.current.emit('sendMessage', "holly smokes!");
+  useEffect(()=>{
+    if(!socketRef.current)return;
+    socketRef.current.on("receiveMessage", (comingMessage)=>{console.log("incomingMessage", comingMessage)})
+    return ()=>{
+      socketRef.current.off("receiveMessage");
+    }
+  }, [])
+
+  
   return(<MainTemplate>
       <section>
         `chatView`
