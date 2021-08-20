@@ -12,13 +12,30 @@ const cors = {
     allowHeaders: ['Content-Type']
   };
 const io = socket(server, cors);
+const users = {};
 
 io.on("connection", (clientSocket)=>{
     // console.log("hit", clientSocket);
-    clientSocket.join("chatRoom");
+    clientSocket.join("chatRoom",()=>{
+        console.log("joined")
+    } );
+
+    clientSocket.on("joinChat",(player)=>{
+        console.log("player", player);
+        users[clientSocket.id]=player;
+        console.log("users", users);
+        clientSocket.to("chatRoom").emit("addedUsersToChatRoom", users);
+    })
+
+    clientSocket.on("disconnect", ()=>{
+        delete users[clientSocket.id];
+        console.log("deleted, new users", users)
+        clientSocket.to("chatRoom").emit("addedUsersToChatRoom", users);
+    })
 
     clientSocket.on("sendMessage", (message)=>{
         console.log("received", message);
         clientSocket.to("chatRoom").emit("receiveMessage", message);
+
     })
 })

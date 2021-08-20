@@ -13,9 +13,11 @@
  * @date: 8/19/2021
  * @description: main component that holds the page sections
  */
-// import Row from 'react-bootstrap/Row';
-// import Col from 'react-bootstrap/Col';
-// import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
 import { useRef, useEffect, useState } from 'react';
 import constants from '../constants/constants';
 
@@ -27,31 +29,40 @@ import io from 'socket.io-client';
 
 const ChatForm = ({ sendMessage }) => {
   const [currentText, setCurrentText] = useState('');
+
   return (
     <div>
-      <form>
-        <input
+      <Form>
+        <Form.Group>
+        <Form.Control
           type="text"
           onChange={(e) => setCurrentText(e.target.value)}
           value={currentText}
-        ></input>
-        <button
+        ></Form.Control>
+        <Button
           onClick={() => {
             sendMessage(currentText);
             setCurrentText('');
           }}
         >
           send message
-        </button>
-      </form>
+        </Button>
+        </Form.Group>
+      </Form>
     </div>
   );
 };
 
-const LeftMenu = () => {
+const LeftMenu = ({userList}) => {
+  console.log("userlist", userList)
   return (
     <section>
       <Link to="/history">History</Link>
+      {Object.keys(userList).map((userProp, index)=>{
+        return(
+          <div key={"user-"+index}> {userList[userProp]} </div>
+        );
+      })}
     </section>
   );
 };
@@ -94,6 +105,7 @@ export const ChatView = () => {
   } = constants;
 
   const [userNa, setUsetNa] = useState('j');
+  const [users, setUsers] = useState({});
   const [messages, setMessages] = useState([
     {
       userName: 'j',
@@ -132,8 +144,10 @@ export const ChatView = () => {
 
   useEffect(() => {
     if (!socketRef.current) return;
-    console.log('messages length', messages);
     window.localStorage.setItem('userName', JSON.stringify(userNa));
+
+    socketRef.current.emit("joinChat", userNa);
+
     if (messages.length != 0)
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
 
@@ -144,10 +158,20 @@ export const ChatView = () => {
         return newMessages;
       });
     };
+    const newUsers = (incomingUsers)=>{
+      console.log("newUsers", incomingUsers);
+      setUsers(() => {
+        const newUsers = {...incomingUsers};
+        return newUsers;
+      });
+    }
+
     socketRef.current.on('receiveMessage', newMessages);
+    socketRef.current.on('addedUsersToChatRoom', newUsers)
     return () => {
       socketRef.current.off('receiveMessage');
-      // socketRef.current.off("incomingMessage")
+      socketRef.current.off('addedUsersToChatRoom')
+
     };
   }, []);
 
@@ -161,22 +185,35 @@ export const ChatView = () => {
 
     socketRef.current.emit('sendMessage', newTypeMessage);
   };
-
   const clearHistory = () => {
     window.localStorage.setItem('messages', JSON.stringify([]));
     setMessages([]);
   };
 
   return (
-    <section>
-      <LeftMenu>leftMenu</LeftMenu>
-      <ChatWindow messages={messages} userName={userNa}>
-        chatWindow
+    <Container>
+      <Row>
+        <Col sm={2}>
+        <LeftMenu userList={users}>leftMenu</LeftMenu>
+        </Col>
+      <Col>
+      <Row>
+        <Col>
+          <ChatWindow messages={messages} userName={userNa}>
+          chatWindow
       </ChatWindow>
-      <section>form</section>
-      <ChatForm sendMessage={sendMessage} />
-      <button onClick={clearHistory}>Clear History</button>
-    </section>
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <ChatForm sendMessage={sendMessage} />
+          
+        <Button onClick={clearHistory}>Clear History</Button>
+        </Col>
+      </Row>
+    </Col>
+    </Row>
+    </Container>
   );
 };
 
@@ -184,7 +221,6 @@ export const ChatHistory = () => {
   const [messages, setMessages] = useState([]);
   const [userNa, setUserNa] = useState("");
   useEffect(() => {
-    // if (messages.length )
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
       setUserNa(JSON.parse(window.localStorage.getItem('userName')) || "")
   }, []);
