@@ -18,6 +18,7 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
 import { useRef, useEffect, useState } from 'react';
 import constants from '../constants/constants';
 import FetchApi from '../components/FetchApi';
@@ -105,25 +106,10 @@ export const ChatView = () => {
     url
   } = constants;
 
-  const [userNa, setUsetNa] = useState('j');
+  const [userNa, setUserNa] = useState('');
   const [users, setUsers] = useState({});
-  const [messages, setMessages] = useState([
-    {
-      userName: 'j',
-      content: 'my JJJ currentMessage',
-      timeStamp: '2020/2/2'
-    },
-    {
-      userName: 'l',
-      content: 'my LLL currentMessage',
-      timeStamp: '2020/2/2'
-    },
-    {
-      userName: 'm',
-      content: 'my MMM currentMessage',
-      timeStamp: '2020/2/2'
-    }
-  ]);
+  const [modal, setModal] = useState(true);
+  const [messages, setMessages] = useState([]);
 
   const socketRef = useRef();
   const setAllCurrentUsers = (users)=>{
@@ -152,9 +138,7 @@ export const ChatView = () => {
     // socketRef.current.on("connect", ()=>{socketRef.current.sendBuffer = []})
     console.log("useEffect")
     window.localStorage.setItem('userName', JSON.stringify(userNa));
-
-    socketRef.current.emit("joinChat", userNa);
-
+    setUserNa(()=>JSON.parse(window.localStorage.getItem('userName')) || []);  
     if (messages.length != 0)
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
 
@@ -199,9 +183,50 @@ export const ChatView = () => {
     window.localStorage.setItem('messages', JSON.stringify([]));
     setMessages([]);
   };
+  const updateUserName = (e)=>{
+    const {target} = e;
+    const {value} = target;
+    console.log("value", value)
+    setUserNa(value)
+
+  }
+
+  const isUserString = ()=>{
+    if(isNaN(userNa)){
+      setModal(false);
+      socketRef.current.emit("joinChat", userNa);
+      window.localStorage.setItem('userName', JSON.stringify(userNa));
+      console.log("socketRef.current", socketRef.current)
+      const newUser = {"me":userNa}
+      setUsers((prevUsers)=>{console.log("prevUsers", prevUsers); return {...prevUsers,  ...newUser } } );
+    }
+  }
 
   return (
     <Container>
+      <Modal
+      show={ modal }
+      onHide={(f)=>f}
+      backdrop="static"
+      keyboard={false}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Simple Chat</Modal.Title>
+          </Modal.Header>  
+        <Modal.Body>
+          Please insert a user name
+        </Modal.Body>
+        <Form>
+        <Form.Control
+          type="text"
+          onChange={(e)=>updateUserName(e)}
+          value={userNa}
+        ></Form.Control>
+        </Form>  
+        <Modal.Footer>
+          <Button variant="secondary" onClick={(e)=>isUserString(e)}>Close</Button>
+        </Modal.Footer>
+    </Modal> 
       <Row>
         <Col sm={2}>
         <LeftMenu userList={users}>leftMenu</LeftMenu>
@@ -217,7 +242,6 @@ export const ChatView = () => {
       <Row>
         <Col>
           <ChatForm sendMessage={sendMessage} />
-          
         <Button onClick={clearHistory}>Clear History</Button>
         </Col>
       </Row>

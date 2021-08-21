@@ -26,7 +26,6 @@
       })
       .then((incomingData) => {
         const { data } = incomingData;
-        console.log("data", data);
         if (data) {
           callBack(data);
         } else {
