@@ -20,7 +20,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import { useRef, useEffect, useState } from 'react';
 import constants from '../constants/constants';
-
+import FetchApi from '../components/FetchApi';
 import { Link, NavLink } from 'react-router-dom';
 import io from 'socket.io-client';
 // import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -54,7 +54,6 @@ const ChatForm = ({ sendMessage }) => {
 };
 
 const LeftMenu = ({userList}) => {
-  console.log("userlist", userList)
   return (
     <section>
       <Link to="/history">History</Link>
@@ -101,7 +100,9 @@ export const ChatView = () => {
     agent,
     upgrade,
     rejectUnauthorized,
-    chatSizeLimit
+    chatSizeLimit,
+    autoConnect,
+    url
   } = constants;
 
   const [userNa, setUsetNa] = useState('j');
@@ -125,16 +126,9 @@ export const ChatView = () => {
   ]);
 
   const socketRef = useRef();
-  socketRef.current = io.connect('http://localhost:3000', {
-    reconnectionDelay,
-    reconnection,
-    reconnectionAttemps,
-    transports,
-    agent,
-    upgrade,
-    rejectUnauthorized
-  });
-
+  const setAllCurrentUsers = (users)=>{
+    setUsers(users);
+  }
   const enforceChatSize = (chatArray) => {
     if (chatArray.length >= chatSizeLimit) {
       chatArray.shift();
@@ -143,13 +137,28 @@ export const ChatView = () => {
   };
 
   useEffect(() => {
-    if (!socketRef.current) return;
+    if (!socketRef) return;
+    socketRef.current = io.connect('http://localhost:3000', {
+      reconnectionDelay,
+      reconnection,
+      reconnectionAttemps,
+      transports,
+      agent,
+      upgrade,
+      rejectUnauthorized,
+      autoConnect
+    });
+  
+    // socketRef.current.on("connect", ()=>{socketRef.current.sendBuffer = []})
+    console.log("useEffect")
     window.localStorage.setItem('userName', JSON.stringify(userNa));
 
     socketRef.current.emit("joinChat", userNa);
 
     if (messages.length != 0)
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
+
+      FetchApi(`${url}/`, 'GET', setAllCurrentUsers, {}); 
 
     const newMessages = (incomingmessages) => {
       setMessages((prvMessages) => {
@@ -171,19 +180,20 @@ export const ChatView = () => {
     return () => {
       socketRef.current.off('receiveMessage');
       socketRef.current.off('addedUsersToChatRoom')
+      socketRef.current.close();
 
     };
   }, []);
 
   const sendMessage = (typedMessage) => {
     const newDate = new Date();
-    const newTypeMessage = {
+    const newTypedMessage = {
       userName: userNa,
       content: typedMessage,
       timeStamp: newDate.toLocaleString('en', { timeZone: 'UTC' })
     };
-
-    socketRef.current.emit('sendMessage', newTypeMessage);
+    setMessages((prevMessages)=>[...prevMessages, newTypedMessage]);
+    socketRef.current.emit('sendMessage', newTypedMessage);
   };
   const clearHistory = () => {
     window.localStorage.setItem('messages', JSON.stringify([]));

@@ -6,7 +6,9 @@ const constants = {
     agent: false,
     upgrade: false,
     rejectUnauthorized: false,
-    chatSizeLimit: 10
+    chatSizeLimit: 3,
+    autoConnect: true,
+    url:"http://localhost:3000"
 };
 
 export default constants;
