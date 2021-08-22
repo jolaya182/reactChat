@@ -33,35 +33,42 @@ const ChatForm = ({ sendMessage }) => {
 
   return (
     <div>
-      <Form>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage(currentText);
+          setCurrentText('');
+        }}
+      >
         <Form.Group>
-        <Form.Control
-          type="text"
-          onChange={(e) => setCurrentText(e.target.value)}
-          value={currentText}
-        ></Form.Control>
-        <Button
-          onClick={() => {
-            sendMessage(currentText);
-            setCurrentText('');
-          }}
-        >
-          send message
-        </Button>
+          <Form.Control
+            type="text"
+            onChange={(e) => {
+              e.preventDefault();
+              setCurrentText(e.target.value);
+            }}
+            value={currentText}
+          ></Form.Control>
+          <Button
+            onClick={() => {
+              sendMessage(currentText);
+              setCurrentText('');
+            }}
+          >
+            send message
+          </Button>
         </Form.Group>
       </Form>
     </div>
   );
 };
 
-const LeftMenu = ({userList}) => {
+const LeftMenu = ({ userList }) => {
   return (
     <section>
       <Link to="/history">History</Link>
-      {Object.keys(userList).map((userProp, index)=>{
-        return(
-          <div key={"user-"+index}> {userList[userProp]} </div>
-        );
+      {Object.keys(userList).map((userProp, index) => {
+        return <div key={'user-' + index}> {userList[userProp]} </div>;
       })}
     </section>
   );
@@ -93,6 +100,18 @@ const ChatWindow = ({ messages, userName }) => {
 };
 
 export const ChatView = () => {
+  let userNamePreviouslySet = '';
+  let isShowModelSet = true;
+  userNamePreviouslySet =
+    JSON.parse(window.localStorage.getItem('userName')) || false;
+  console.log('userNamePreviouslySet', userNamePreviouslySet);
+  const messagePreviouslySet = JSON.parse(window.localStorage.getItem('messages')) || [];
+
+  if (userNamePreviouslySet) {
+    isShowModelSet = false;
+  } else {
+    userNamePreviouslySet = '';
+  }
   const {
     reconnectionDelay,
     reconnection,
@@ -106,15 +125,15 @@ export const ChatView = () => {
     url
   } = constants;
 
-  const [userNa, setUserNa] = useState('');
+  const [userNa, setUserNa] = useState(userNamePreviouslySet);
   const [users, setUsers] = useState({});
-  const [modal, setModal] = useState(true);
-  const [messages, setMessages] = useState([]);
+  const [showModal, setShowModal] = useState(isShowModelSet);
+  const [messages, setMessages] = useState(messagePreviouslySet);
 
   const socketRef = useRef();
-  const setAllCurrentUsers = (users)=>{
+  const setAllCurrentUsers = (users) => {
     setUsers(users);
-  }
+  };
   const enforceChatSize = (chatArray) => {
     if (chatArray.length >= chatSizeLimit) {
       chatArray.shift();
@@ -134,15 +153,14 @@ export const ChatView = () => {
       rejectUnauthorized,
       autoConnect
     });
-  
+
     // socketRef.current.on("connect", ()=>{socketRef.current.sendBuffer = []})
-    console.log("useEffect")
-    window.localStorage.setItem('userName', JSON.stringify(userNa));
-    setUserNa(()=>JSON.parse(window.localStorage.getItem('userName')) || []);  
+    console.log('useEffect');
+
     if (messages.length != 0)
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
 
-      FetchApi(`${url}/`, 'GET', setAllCurrentUsers, {}); 
+    FetchApi(`${url}/`, 'GET', setAllCurrentUsers, {});
 
     const newMessages = (incomingmessages) => {
       setMessages((prvMessages) => {
@@ -151,21 +169,20 @@ export const ChatView = () => {
         return newMessages;
       });
     };
-    const newUsers = (incomingUsers)=>{
-      console.log("newUsers", incomingUsers);
+    const newUsers = (incomingUsers) => {
+      console.log('newUsers', incomingUsers);
       setUsers(() => {
-        const newUsers = {...incomingUsers};
+        const newUsers = { ...incomingUsers };
         return newUsers;
       });
-    }
+    };
 
     socketRef.current.on('receiveMessage', newMessages);
-    socketRef.current.on('addedUsersToChatRoom', newUsers)
+    socketRef.current.on('addedUsersToChatRoom', newUsers);
     return () => {
       socketRef.current.off('receiveMessage');
-      socketRef.current.off('addedUsersToChatRoom')
+      socketRef.current.off('addedUsersToChatRoom');
       socketRef.current.close();
-
     };
   }, []);
 
@@ -176,91 +193,100 @@ export const ChatView = () => {
       content: typedMessage,
       timeStamp: newDate.toLocaleString('en', { timeZone: 'UTC' })
     };
-    setMessages((prevMessages)=>[...prevMessages, newTypedMessage]);
+    setMessages((prevMessages) => [...enforceChatSize(prevMessages), newTypedMessage]);
     socketRef.current.emit('sendMessage', newTypedMessage);
   };
   const clearHistory = () => {
     window.localStorage.setItem('messages', JSON.stringify([]));
     setMessages([]);
   };
-  const updateUserName = (e)=>{
-    const {target} = e;
-    const {value} = target;
-    console.log("value", value)
-    setUserNa(value)
+  const updateUserName = (e) => {
+    const { target } = e;
+    const { value } = target;
+    setUserNa(value);
+  };
 
-  }
-
-  const isUserString = ()=>{
-    if(isNaN(userNa)){
-      setModal(false);
-      socketRef.current.emit("joinChat", userNa);
+  const isUserString = () => {
+    if (isNaN(userNa)) {
+      setShowModal(false);
+      socketRef.current.emit('joinChat', userNa);
       window.localStorage.setItem('userName', JSON.stringify(userNa));
-      console.log("socketRef.current", socketRef.current)
-      const newUser = {"me":userNa}
-      setUsers((prevUsers)=>{console.log("prevUsers", prevUsers); return {...prevUsers,  ...newUser } } );
+      // console.log("socketRef.current", socketRef.current)
+      const newUser = { me: userNa };
+      setUsers((prevUsers) => {
+        return { ...prevUsers, ...newUser };
+      });
     }
-  }
+  };
 
   return (
     <Container>
       <Modal
-      show={ modal }
-      onHide={(f)=>f}
-      backdrop="static"
-      keyboard={false}
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>Simple Chat</Modal.Title>
-          </Modal.Header>  
-        <Modal.Body>
-          Please insert a user name
-        </Modal.Body>
+        show={showModal}
+        onHide={(f) => f}
+        backdrop="static"
+        keyboard={false}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Simple Chat</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Please insert a user name</Modal.Body>
         <Form>
-        <Form.Control
-          type="text"
-          onChange={(e)=>updateUserName(e)}
-          value={userNa}
-        ></Form.Control>
-        </Form>  
+          <Form.Control
+            type="text"
+            onChange={(e) => {
+              e.preventDefault();
+              updateUserName(e);
+            }}
+            value={userNa}
+          ></Form.Control>
+        </Form>
         <Modal.Footer>
-          <Button variant="secondary" onClick={(e)=>isUserString(e)}>Close</Button>
+          <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              isUserString(e);
+            }}
+          >
+            Submit
+          </Button>
         </Modal.Footer>
-    </Modal> 
+      </Modal>
       <Row>
         <Col sm={2}>
-        <LeftMenu userList={users}>leftMenu</LeftMenu>
+          <LeftMenu userList={users}>leftMenu</LeftMenu>
         </Col>
-      <Col>
-      <Row>
         <Col>
-          <ChatWindow messages={messages} userName={userNa}>
-          chatWindow
-      </ChatWindow>
+          <Row>
+            <Col>
+              <ChatWindow messages={messages} userName={userNa}>
+                chatWindow
+              </ChatWindow>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <ChatForm sendMessage={sendMessage} />
+              <Button onClick={clearHistory}>Clear History</Button>
+            </Col>
+          </Row>
         </Col>
       </Row>
-      <Row>
-        <Col>
-          <ChatForm sendMessage={sendMessage} />
-        <Button onClick={clearHistory}>Clear History</Button>
-        </Col>
-      </Row>
-    </Col>
-    </Row>
     </Container>
   );
 };
 
 export const ChatHistory = () => {
   const [messages, setMessages] = useState([]);
-  const [userNa, setUserNa] = useState("");
+  const [userNa, setUserNa] = useState('');
   useEffect(() => {
-      setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
-      setUserNa(JSON.parse(window.localStorage.getItem('userName')) || "")
+    setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
+    setUserNa(JSON.parse(window.localStorage.getItem('userName')) || '');
   }, []);
   return (
     <section>
-      <Link to='/'>Chat View</Link>
+      <Link to="/">Chat View</Link>
       <div>ChatHistory</div>
       {messages.map((message, index) => {
         const newClassName =
