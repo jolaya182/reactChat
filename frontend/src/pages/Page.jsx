@@ -28,7 +28,12 @@ import ChatDisplay from '../components/ChatDisplay';
 import ChatForm from '../components/ChatForm';
 import LeftMenu from '../components/LeftMenu';
 
-export const ChatView = () => {
+export /**
+ * page that allows for communication between users that have inserted their names
+ *
+ * @return {*} 
+ */
+const ChatView = () => {
   let userNamePreviouslySet = '';
   let isShowModelSet = true;
   userNamePreviouslySet =
@@ -205,7 +210,12 @@ export const ChatView = () => {
   );
 };
 
-export const ChatHistory = () => {
+export /**
+ * page that displays all the history of all the messages 
+ *
+ * @return {*} 
+ */
+const ChatHistory = () => {
   const [messages, setMessages] = useState([]);
   const [userNa, setUserNa] = useState('');
   useEffect(() => {
