@@ -2,7 +2,7 @@
 /**
  * @title: index.jsx
  * @author: Javier Olaya
- * @date: 6/23/2021
+ * @date: 8/23/2021
  * @description: main file used to render the application
  */
 import { render } from 'react-dom';

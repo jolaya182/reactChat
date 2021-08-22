@@ -24,85 +24,9 @@ import constants from '../constants/constants';
 import FetchApi from '../components/FetchApi';
 import { Link } from 'react-router-dom';
 import io from 'socket.io-client';
-
-
-const ChatDisplay = ({userNa, messages})=>{
-return (
-  <section className="chat-window-wrapper">
-  <div className="chat-window">
-    {messages.map((message, index) => {
-      const newClassName =
-        message.userName === userNa
-          ? 'chat-bubble-left'
-          : 'chat-bubble-right';
-      return (
-        <section className={newClassName} key={'message-' + index}>
-          <div className={'chat-bubble-fill'}>{message.content}</div>
-          <div>
-            {message.userName + ' '}
-            {message.timeStamp}
-          </div>
-        </section>
-      );
-    })}
-  </div>
-</section>
-)
-} 
-
-
-const ChatForm = ({ sendMessage, clearHistory, clearLocalStorage }) => {
-  const [currentText, setCurrentText] = useState('');
-
-  return (
-    <Form
-      className="chat-form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        sendMessage(currentText);
-        setCurrentText('');
-      }}
-    >
-      <Form.Group>
-        <Form.Control
-          type="text"
-          onChange={(e) => {
-            e.preventDefault();
-            setCurrentText(e.target.value);
-          }}
-          value={currentText}
-        ></Form.Control>
-        <Button
-          onClick={() => {
-            sendMessage(currentText);
-            setCurrentText('');
-          }}
-        >
-          Send Message
-        </Button>
-        <Button onClick={clearHistory}>Clear History</Button>
-        <Button onClick={clearLocalStorage}>Clear Local Storage</Button>
-      </Form.Group>
-    </Form>
-  );
-};
-
-const LeftMenu = ({ userList }) => {
-  return (
-    <section className="left-menu">
-      <Link className="left-menu-chaters" to="/history">History</Link>
-      {Object.keys(userList).map((userProp, index) => {
-        return <div className="left-menu-chaters" key={'user-' + index}> {userList[userProp]} </div>;
-      })}
-    </section>
-  );
-};
-
-const ChatWindow = ({ messages, userName }) => {
-  return (
-    <ChatDisplay messages={messages} userNa={userName}></ChatDisplay>
-  );
-};
+import ChatDisplay from '../components/ChatDisplay';
+import ChatForm from '../components/ChatForm';
+import LeftMenu from '../components/LeftMenu';
 
 export const ChatView = () => {
   let userNamePreviouslySet = '';
@@ -194,15 +118,12 @@ export const ChatView = () => {
       content: typedMessage,
       timeStamp: newDate.toLocaleString('en', { timeZone: 'UTC' })
     };
-    
+
     setMessages((prevMessages) => {
-      const newMessages = [
-      ...enforceChatSize(prevMessages),
-      newTypedMessage
-    ];
-    window.localStorage.setItem('messages', JSON.stringify( newMessages));
-    return newMessages
-  });
+      const newMessages = [...enforceChatSize(prevMessages), newTypedMessage];
+      window.localStorage.setItem('messages', JSON.stringify(newMessages));
+      return newMessages;
+    });
 
     socketRef.current.emit('sendMessage', newTypedMessage);
   };
@@ -233,8 +154,8 @@ export const ChatView = () => {
   };
 
   return (
-    <Container >
-      <Modal show={showModal} backdrop="static" keyboard={false}>
+    <Container>
+      <Modal show={showModal} backdrop="static" keyboard={true}>
         <Modal.Header>
           <Modal.Title>Simple Chat</Modal.Title>
         </Modal.Header>
@@ -265,16 +186,17 @@ export const ChatView = () => {
         <div className="colm">
           <LeftMenu userList={users}>leftMenu</LeftMenu>
         </div>
-        <Col >
+        <Col>
           <Row>
             <Col>
-              <ChatWindow messages={messages} userName={userNa}>
+              <ChatDisplay messages={messages} userNa={userNa}>
                 chatWindow
-              </ChatWindow>
-              <ChatForm sendMessage={sendMessage} 
-              clearHistory={()=>clearHistory()} 
-              clearLocalStorage={()=>clearLocalStorage()} />
-
+              </ChatDisplay>
+              <ChatForm
+                sendMessage={sendMessage}
+                clearHistory={() => clearHistory()}
+                clearLocalStorage={() => clearLocalStorage()}
+              />
             </Col>
           </Row>
         </Col>
@@ -290,14 +212,14 @@ export const ChatHistory = () => {
     setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
     setUserNa(JSON.parse(window.localStorage.getItem('userName')) || '');
   }, []);
-  console.log('added messages', messages);
   return (
-    <Container >
+    <Container>
       <div className="rowm">
-        <div  className="left-menu">
-          <Link className="left-menu-chaters" to="/">Chat View</Link>
-          
-        </div >
+        <div className="left-menu">
+          <Link className="left-menu-chaters" to="/">
+            Chat View
+          </Link>
+        </div>
         <Col>
           <ChatDisplay messages={messages} userNa={userNa}></ChatDisplay>
         </Col>
@@ -305,7 +227,6 @@ export const ChatHistory = () => {
     </Container>
   );
 };
-
 
 export const Whoops404 = ({ location }) => {
   return (

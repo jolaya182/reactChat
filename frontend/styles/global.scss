@@ -22,16 +22,6 @@ html {
 #root {
   height: 100%;
 }
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-button {
-  font-size: 1.2rem;
-}
 
 .table {
   width: 60%;
@@ -40,7 +30,7 @@ button {
 
 .nav-links {
   margin: 0;
-  color: black;
+  color: var(--txt);
   width: 100%;
   font-size: 30px;
   &:hover {
@@ -50,7 +40,7 @@ button {
 
 a {
   text-decoration: none;
-  color: black;
+  color: var(--txt);
 }
 
 .colm {
@@ -73,7 +63,6 @@ a {
   align-items: center;
   width: 100%;
   margin: 0px;
-  // padding: 0px;
 }
 
 .row {
@@ -82,19 +71,6 @@ a {
   height: 100%;
   width: 100%;
 }
-
-.sidebar {
-  height: 100%;
-}
-
-.pic {
-  width: 160px;
-  height: 160px;
-  text-align: center;
-  margin: 10px;
-  cursor: pointer;
-}
-
 
 .chat-window {
   width: 100%;
@@ -128,7 +104,7 @@ a {
     margin-left: auto;
   }
   &-fill {
-    border: 1px solid black;
+    border: 1px solid var(--txt);
     border-radius: 5px;
     background-color: rgb(227, 253, 187);
     display: flex;
@@ -139,12 +115,13 @@ a {
 .left-menu {
   background-color: #4a154b;
   height: 100%;
+  overflow: scroll;
   &-chaters {
     display: flex;
     height: 90px;
     font-size: 28px;
     color: white;
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid var(--txt);
     padding: 2px;
     text-align: center;
     margin: auto;
