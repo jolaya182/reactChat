@@ -22,80 +22,85 @@ import Modal from 'react-bootstrap/Modal';
 import { useRef, useEffect, useState } from 'react';
 import constants from '../constants/constants';
 import FetchApi from '../components/FetchApi';
-import { Link, NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import io from 'socket.io-client';
-// import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-// import Tooltip from 'react-bootstrap/Tooltip';
-// import Table from 'react-bootstrap/Table';
 
-const ChatForm = ({ sendMessage }) => {
+
+const ChatDisplay = ({userNa, messages})=>{
+return (
+  <section className="chat-window-wrapper">
+  <div className="chat-window">
+    {messages.map((message, index) => {
+      const newClassName =
+        message.userName === userNa
+          ? 'chat-bubble-left'
+          : 'chat-bubble-right';
+      return (
+        <section className={newClassName} key={'message-' + index}>
+          <div className={'chat-bubble-fill'}>{message.content}</div>
+          <div>
+            {message.userName + ' '}
+            {message.timeStamp}
+          </div>
+        </section>
+      );
+    })}
+  </div>
+</section>
+)
+} 
+
+
+const ChatForm = ({ sendMessage, clearHistory, clearLocalStorage }) => {
   const [currentText, setCurrentText] = useState('');
 
   return (
-    <div>
-      <Form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage(currentText);
-          setCurrentText('');
-        }}
-      >
-        <Form.Group>
-          <Form.Control
-            type="text"
-            onChange={(e) => {
-              e.preventDefault();
-              setCurrentText(e.target.value);
-            }}
-            value={currentText}
-          ></Form.Control>
-          <Button
-            onClick={() => {
-              sendMessage(currentText);
-              setCurrentText('');
-            }}
-          >
-            send message
-          </Button>
-        </Form.Group>
-      </Form>
-    </div>
+    <Form
+      className="chat-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        sendMessage(currentText);
+        setCurrentText('');
+      }}
+    >
+      <Form.Group>
+        <Form.Control
+          type="text"
+          onChange={(e) => {
+            e.preventDefault();
+            setCurrentText(e.target.value);
+          }}
+          value={currentText}
+        ></Form.Control>
+        <Button
+          onClick={() => {
+            sendMessage(currentText);
+            setCurrentText('');
+          }}
+        >
+          Send Message
+        </Button>
+        <Button onClick={clearHistory}>Clear History</Button>
+        <Button onClick={clearLocalStorage}>Clear Local Storage</Button>
+      </Form.Group>
+    </Form>
   );
 };
 
 const LeftMenu = ({ userList }) => {
   return (
-    <section>
-      <Link to="/history">History</Link>
+    <section className="left-menu">
+      <Link className="left-menu-chaters" to="/history">History</Link>
       {Object.keys(userList).map((userProp, index) => {
-        return <div key={'user-' + index}> {userList[userProp]} </div>;
+        return <div className="left-menu-chaters" key={'user-' + index}> {userList[userProp]} </div>;
       })}
     </section>
   );
 };
 
 const ChatWindow = ({ messages, userName }) => {
-  // console.log("ChatWindow ",messages )
   return (
-    <section>
-      {messages.map((message, index) => {
-        const newClassName =
-          message.userName === userName ? 'left-chat' : 'right-chat';
-        return (
-          <div key={'message-' + index}>
-            {
-              <section className={newClassName}>
-                <div>{message.content}</div>
-                <div>
-                  {message.userName + ' '}
-                  {message.timeStamp}
-                </div>
-              </section>
-            }
-          </div>
-        );
-      })}
-    </section>
+    <ChatDisplay messages={messages} userNa={userName}></ChatDisplay>
   );
 };
 
@@ -104,8 +109,8 @@ export const ChatView = () => {
   let isShowModelSet = true;
   userNamePreviouslySet =
     JSON.parse(window.localStorage.getItem('userName')) || false;
-  console.log('userNamePreviouslySet', userNamePreviouslySet);
-  const messagePreviouslySet = JSON.parse(window.localStorage.getItem('messages')) || [];
+  const messagePreviouslySet =
+    JSON.parse(window.localStorage.getItem('messages')) || [];
 
   if (userNamePreviouslySet) {
     isShowModelSet = false;
@@ -154,9 +159,6 @@ export const ChatView = () => {
       autoConnect
     });
 
-    // socketRef.current.on("connect", ()=>{socketRef.current.sendBuffer = []})
-    console.log('useEffect');
-
     if (messages.length != 0)
       setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
 
@@ -170,7 +172,6 @@ export const ChatView = () => {
       });
     };
     const newUsers = (incomingUsers) => {
-      console.log('newUsers', incomingUsers);
       setUsers(() => {
         const newUsers = { ...incomingUsers };
         return newUsers;
@@ -193,9 +194,19 @@ export const ChatView = () => {
       content: typedMessage,
       timeStamp: newDate.toLocaleString('en', { timeZone: 'UTC' })
     };
-    setMessages((prevMessages) => [...enforceChatSize(prevMessages), newTypedMessage]);
+    
+    setMessages((prevMessages) => {
+      const newMessages = [
+      ...enforceChatSize(prevMessages),
+      newTypedMessage
+    ];
+    window.localStorage.setItem('messages', JSON.stringify( newMessages));
+    return newMessages
+  });
+
     socketRef.current.emit('sendMessage', newTypedMessage);
   };
+
   const clearHistory = () => {
     window.localStorage.setItem('messages', JSON.stringify([]));
     setMessages([]);
@@ -211,23 +222,20 @@ export const ChatView = () => {
       setShowModal(false);
       socketRef.current.emit('joinChat', userNa);
       window.localStorage.setItem('userName', JSON.stringify(userNa));
-      // console.log("socketRef.current", socketRef.current)
       const newUser = { me: userNa };
       setUsers((prevUsers) => {
         return { ...prevUsers, ...newUser };
       });
     }
   };
+  const clearLocalStorage = () => {
+    window.localStorage.clear();
+  };
 
   return (
-    <Container>
-      <Modal
-        show={showModal}
-        onHide={(f) => f}
-        backdrop="static"
-        keyboard={false}
-      >
-        <Modal.Header closeButton>
+    <Container >
+      <Modal show={showModal} backdrop="static" keyboard={false}>
+        <Modal.Header>
           <Modal.Title>Simple Chat</Modal.Title>
         </Modal.Header>
         <Modal.Body>Please insert a user name</Modal.Body>
@@ -253,26 +261,24 @@ export const ChatView = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-      <Row>
-        <Col sm={2}>
+      <div className="rowm">
+        <div className="colm">
           <LeftMenu userList={users}>leftMenu</LeftMenu>
-        </Col>
-        <Col>
+        </div>
+        <Col >
           <Row>
             <Col>
               <ChatWindow messages={messages} userName={userNa}>
                 chatWindow
               </ChatWindow>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <ChatForm sendMessage={sendMessage} />
-              <Button onClick={clearHistory}>Clear History</Button>
+              <ChatForm sendMessage={sendMessage} 
+              clearHistory={()=>clearHistory()} 
+              clearLocalStorage={()=>clearLocalStorage()} />
+
             </Col>
           </Row>
         </Col>
-      </Row>
+      </div>
     </Container>
   );
 };
@@ -284,30 +290,22 @@ export const ChatHistory = () => {
     setMessages(JSON.parse(window.localStorage.getItem('messages')) || []);
     setUserNa(JSON.parse(window.localStorage.getItem('userName')) || '');
   }, []);
+  console.log('added messages', messages);
   return (
-    <section>
-      <Link to="/">Chat View</Link>
-      <div>ChatHistory</div>
-      {messages.map((message, index) => {
-        const newClassName =
-          message.userName === userNa ? 'left-chat' : 'right-chat';
-        return (
-          <div key={'message-' + index}>
-            {
-              <section className={newClassName}>
-                <div>{message.content}</div>
-                <div>
-                  {message.userName + ' '}
-                  {message.timeStamp}
-                </div>
-              </section>
-            }
-          </div>
-        );
-      })}
-    </section>
+    <Container >
+      <div className="rowm">
+        <div  className="left-menu">
+          <Link className="left-menu-chaters" to="/">Chat View</Link>
+          
+        </div >
+        <Col>
+          <ChatDisplay messages={messages} userNa={userNa}></ChatDisplay>
+        </Col>
+      </div>
+    </Container>
   );
 };
+
 
 export const Whoops404 = ({ location }) => {
   return (

@@ -20,22 +20,17 @@ const io = socket(server, cors);
 const users = {};
 
 io.on("connection", (clientSocket)=>{
-    console.log("hit");
 
-    clientSocket.join("chatRoom",()=>{
-        console.log("joined chatRoom");
-    } );
+    clientSocket.join("chatRoom" );
 
     clientSocket.on("joinChat",(player)=>{
         users[clientSocket.id]=player;
-        console.log("joinedChat users", users);
         clientSocket.to("chatRoom").emit("addedUsersToChatRoom", users);
     })
 
     clientSocket.on("disconnect",(reason)=>{
         if(reason === "transport close" || reason === "transport error"){
             delete users[clientSocket.id];
-        console.log("deleted, new users", users, reason)
         clientSocket.to("chatRoom").emit("addedUsersToChatRoom", users);
         clientSocket.disconnect();
         }
@@ -48,13 +43,11 @@ io.on("connection", (clientSocket)=>{
       
 
     clientSocket.on("sendMessage", (message)=>{
-        console.log("received", message);
         clientSocket.to("chatRoom").emit("receiveMessage", message);
 
     })
 })
 
 app.get('/', (req, res, next)=>{
-    console.log("get hit")
     res.send({data: users})
 })
